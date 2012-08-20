@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="hello">Hello World, ThadeusAppActivity!</string>
+    <string name="app_name">ThadeusApp</string>
+    <string name="video_section_description">Video section descriptoin goes here</string>
+    <string name="album_section_description">Album section descriptions goes here</string>
+    <string name="link_section_description">link section description goes here</string>
+
+</resources>
