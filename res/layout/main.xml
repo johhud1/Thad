@@ -12,7 +12,7 @@
         android:text="@string/hello"/>
 
     <LinearLayout
-        android:id="@+id/album_layout"
+        android:id="@+id/album_selector_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -35,7 +35,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/video_layout"
+        android:id="@+id/video_selector_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -58,7 +58,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/link_layout"
+        android:id="@+id/link_selector_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
