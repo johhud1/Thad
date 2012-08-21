@@ -6,5 +6,6 @@
     <string name="video_section_description">Video section descriptoin goes here</string>
     <string name="album_section_description">Album section descriptions goes here</string>
     <string name="link_section_description">link section description goes here</string>
+    <string name="curplaying_text">Playing: </string>
 
 </resources>

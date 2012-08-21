@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mediacontroller_rellayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <TextView
+        android:id="@+id/curplaying_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/curplaying_text" />
+
+    <LinearLayout
+        android:id="@+id/mediacontroller_horizontallayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/curplaying_textview" >
+
+        <ImageButton
+            android:id="@+id/mc_prev"
+            android:clickable="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_media_previous"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/mc_rew"
+            android:clickable="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_media_rew"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/mc_pp"
+            android:clickable="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_media_play"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/mc_ff"
+            android:clickable="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_media_ff"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/mc_next"
+            android:clickable="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_media_next"
+            android:layout_weight="1" />
+
+    </LinearLayout>
+
+    <SeekBar
+        android:id="@+id/mc_progbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/mediacontroller_horizontallayout" />
+
+    <TextView
+        android:id="@+id/mc_currenttime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/mc_progbar"
+        android:text="0" />
+
+     <TextView
+         android:id="@+id/mc_slash"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:layout_toRightOf="@id/mc_currenttime"
+         android:layout_below="@+id/mc_progbar"
+         android:paddingLeft="5px"
+         android:paddingRight="5px"
+         android:text = "/"></TextView>
+
+     <TextView
+        android:id="@+id/mc_endtime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/mc_progbar"
+        android:layout_toRightOf="@id/mc_slash"
+        android:text="0" />
+
+     </RelativeLayout>

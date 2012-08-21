@@ -2,6 +2,8 @@ package com.thadeus.android;
 
 public class LFnC {
 
+    public static String album_listkey = "album_key";
+    public static String song_listkey = "song_key";
     public static String audio_fileformat = "mp3";
     public static String albumart_fileformat = "jpg";
 
@@ -16,6 +18,6 @@ public class LFnC {
             mFileSize = fileSize; //in bytes
         }
     }
-    public static XAPKFile[] xAPKS = {new XAPKFile(true, 1, 116964900)};
+    public static XAPKFile[] xAPKS = {new XAPKFile(true, 1, 64912563)};
 
 }
