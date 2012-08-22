@@ -57,6 +57,8 @@ import java.util.Locale;
      */
     public class myMediaController extends FrameLayout {
 
+        public static final int    SHOW_PROGRESS = 2;
+
         private MediaPlayerControl  mPlayer;
         private Context             mContext;
         private View                mRoot;
@@ -64,7 +66,6 @@ import java.util.Locale;
         private TextView            mEndTime, mCurrentTime;
         private boolean             mShowing;
         private boolean             mDragging;
-        private static final int    SHOW_PROGRESS = 2;
         private boolean             mUseFastForward;
         private boolean             mListenersSet;
         private View.OnClickListener mNextListener, mPrevListener;
@@ -78,15 +79,20 @@ import java.util.Locale;
 
         public myMediaController(Context context, AttributeSet attrs) {
             super(context, attrs);
-            mRoot = this;
             mContext = context;
             mUseFastForward = true;
+            mRoot = this.makeControllerView(this, context);
         }
 
         @Override
         public void onFinishInflate() {
-            if (mRoot != null)
+            super.onFinishInflate();
+            if (mRoot != null){
                 initControllerView(mRoot);
+            }
+            else{
+                Log.e("onFinishInflate", "mRoot is NULL");
+            }
         }
 
         public myMediaController(Context context, boolean useFastForward) {
@@ -101,7 +107,6 @@ import java.util.Locale;
             mUseFastForward = true;
         }
 
-
         private OnTouchListener mTouchListener = new OnTouchListener() {
             public boolean onTouch(View v, MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -112,9 +117,15 @@ import java.util.Locale;
                 return false;
             }
         };
+        private void updateButtonsEnabled(){
+            if(mPlayer!=null){
+                setEnabled(mPlayer.isCurrentSongSet());
+            }
+        }
 
         public void setMediaPlayer(MediaPlayerControl player) {
             mPlayer = player;
+            updateButtonsEnabled();
             updatePausePlay();
         }
 
@@ -124,14 +135,11 @@ import java.util.Locale;
          * @param view The view to which to anchor the controller when it is visible.
          */
         public void setAnchorView(View view) {
-
+            Log.d("setAnchorView", "view(arg): "+view.toString()+" setting AnchorView and exec makeControllerView");
             removeAllViews();
-            View v = makeControllerView(view);
+            View v = makeControllerView(view, mContext);
             mShowing = true;
             setEnabled(false);
-//            ArrayList<View> views = new ArrayList<View>();
-//            views.add(v);
-//            view.addTouchables(views);
         }
 
         /**
@@ -140,31 +148,33 @@ import java.util.Locale;
          * @return The controller view.
          * @hide This doesn't work as advertised
          */
-        protected View makeControllerView(View root) {
-            LayoutInflater inflate = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        private View makeControllerView(View root, Context context) {
+            LayoutInflater inflate = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             mRoot = inflate.inflate(R.layout.mymediacontroller_layout, (ViewGroup) root);
-
-            initControllerView(mRoot);
-
+            //initControllerView(mRoot);
             return mRoot;
         }
 
         private void initControllerView(View v) {
+            String tag = "initControllerView";
             mPauseButton = (ImageButton) v.findViewById(R.id.mc_pp);
             if (mPauseButton != null) {
                 mPauseButton.requestFocus();
                 mPauseButton.setOnClickListener(mPauseListener);
             }
+            else{ Log.e(tag, "mPauseButton not set. it's NULL!");}
 
             mFfwdButton = (ImageButton) v.findViewById(R.id.mc_ff);
             if (mFfwdButton != null) {
                 mFfwdButton.setOnClickListener(mFfwdListener);
             }
+            else{ Log.e(tag, "mPFfwdButton not set. it's NULL!");}
 
             mRewButton = (ImageButton) v.findViewById(R.id.mc_rew);
             if (mRewButton != null) {
                 mRewButton.setOnClickListener(mRewListener);
             }
+            else{ Log.e(tag, "mRewButton not set. it's NULL!");}
 
             // By default these are hidden. They will be enabled when setPrevNextListeners() is called
             mNextButton = (ImageButton) v.findViewById(R.id.mc_next);
@@ -216,14 +226,31 @@ import java.util.Locale;
             }
         }
 
+        public void checkForProgress(){
+            if(mPlayer.isPlaying()){
+                setEnabled(true);
+                mHandler.sendEmptyMessage(SHOW_PROGRESS);
+            }
+        }
+
         public boolean isShowing() {
             return mShowing;
+        }
+
+        public void updateUI(){
+            if(mPlayer.isCurrentSongSet()){
+                setPlayingText(mPlayer.getCurrentSongTitle());
+                mPlayer.setPrevNextListeners();
+                setEnabled(true);
+                mHandler.sendEmptyMessage(SHOW_PROGRESS);
+                return;
+            }
         }
 
         public void setPlayingText(String text){
             String tag = "setPlayingText";
             String dispText = getContext().getResources().getString(R.string.curplaying_text) + " "+text;
-            TextView view = (TextView) findViewById(R.id.curplaying_textview);
+            TextView view = (TextView) getRootView().findViewById(R.id.curplaying_textview);
             if(view!=null){
                 view.setText(dispText);
             }
@@ -232,7 +259,7 @@ import java.util.Locale;
             }
         }
 
-        private Handler mHandler = new Handler() {
+        public Handler mHandler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
                 int pos;
@@ -353,9 +380,11 @@ import java.util.Locale;
         };
 
         private void updatePausePlay() {
-            if (mRoot == null || mPauseButton == null)
+            String tag = "updatePausePlay";
+            if (mRoot == null || mPauseButton == null){
+                Log.e(tag, "mRoot: "+mRoot+" or mPauseButton: "+mPauseButton+" are null. FAILING");
                 return;
-
+            }
             if (mPlayer.isPlaying()) {
                 mPauseButton.setImageResource(android.R.drawable.ic_media_pause);
             } else {
@@ -367,8 +396,10 @@ import java.util.Locale;
             String tag = "doPauseResume";
             Log.d(tag, "about to updatePausePlay and send message etc");
             if (mPlayer.isPlaying()) {
+                Log.d(tag, "mPlayer is playing");
                 mPlayer.pause();
             } else {
+                Log.d(tag, "mPlayer is not playing");
                 mPlayer.start();
             }
             updatePausePlay();
@@ -489,6 +520,17 @@ import java.util.Locale;
             }
         }
 
+        public void updatePrevNextButtonEnabled(){
+            if(mRoot!=null){
+                if(mNextListener != null){
+                    mNextButton.setEnabled(true);
+                } else mNextButton.setEnabled(false);
+                if(mPrevListener != null){
+                    mPrevButton.setEnabled(true);
+                } else mPrevButton.setEnabled(false);
+            }
+        }
+
         public void setPrevNextListeners(View.OnClickListener next, View.OnClickListener prev) {
             mNextListener = next;
             mPrevListener = prev;
@@ -496,13 +538,6 @@ import java.util.Locale;
 
             if (mRoot != null) {
                 installPrevNextListeners();
-
-                if (mNextButton != null) {
-                    mNextButton.setVisibility(View.VISIBLE);
-                }
-                if (mPrevButton != null) {
-                    mPrevButton.setVisibility(View.VISIBLE);
-                }
             }
         }
 
@@ -517,6 +552,9 @@ import java.util.Locale;
             boolean canPause();
             boolean canSeekBackward();
             boolean canSeekForward();
+            void setPrevNextListeners();
+            boolean isCurrentSongSet();
+            String getCurrentSongTitle();
         }
     }
 

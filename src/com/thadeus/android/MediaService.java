@@ -35,7 +35,7 @@ public class MediaService extends Service implements MediaPlayerControl,
     private ArrayList<Album> mAlbums;
     private MediaPlayer mp;
     private ZipResourceFile zrf;
-    private Song currentlyPlaying;
+    private Song mCurrentlyPlaying=null;
     private boolean mIsBound;
     private String audioFile;
     private myMediaController mc;
@@ -232,7 +232,7 @@ public class MediaService extends Service implements MediaPlayerControl,
     @Override
     public IBinder onBind(Intent intent) {
         Log.d("MediaService onBind", "onBinding, about to 'startForeground'");
-        startForeground(NOTIFICATION, buildNotification());
+//        startForeground(NOTIFICATION, buildNotification());
         return mBinder;
     }
 
@@ -264,45 +264,27 @@ public class MediaService extends Service implements MediaPlayerControl,
     }
 
     private void skipNext(){
-        playSong(currentlyPlaying.mAlbum.mSongs.get(currentlyPlaying.index+1));
+        playSong(mCurrentlyPlaying.mAlbum.mSongs.get(mCurrentlyPlaying.index+1));
     }
     private void skipPrev(){
-        playSong(currentlyPlaying.mAlbum.mSongs.get(currentlyPlaying.index-1));
+        playSong(mCurrentlyPlaying.mAlbum.mSongs.get(mCurrentlyPlaying.index-1));
     }
     private boolean playSong(Song song){
         String tag = "playSong";
+        startForeground(NOTIFICATION, buildNotification());
         ZipEntryRO zfile = song.mFile;
         Log.d(tag, "It is unCompressed"+zfile.isUncompressed());
         if(zfile.isUncompressed()){
             Log.d(tag, "in 'isUncompressed code block");
             mp.reset();
             AssetFileDescriptor afd = zrf.getAssetFileDescriptor(zfile.mFileName);
-            currentlyPlaying = song; //.mTitle + " - "+song.mAlbum.mName;
+            mCurrentlyPlaying = song; //.mTitle + " - "+song.mAlbum.mName;
+            setPrevNextListeners();
+            mc.setEnabled(true);
             try {
                 mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
                 mp.prepare();
-                View.OnClickListener nextClickListener = null;
-                if(song.index < (song.mAlbum.mSongs.size()-1)){
-                    nextClickListener = new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            skipNext();
-                        }
-                    };
-                }
-                View.OnClickListener prevClickListener = null;
-                if(song.index > 0){
-                    prevClickListener = new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            skipPrev();
-                        }
-                    };
-                }
-                if(mc!=null){
-                    mc.setPrevNextListeners(nextClickListener, prevClickListener);
-                }
-                else Log.e(tag, "couldn't setPrevNextListeners");
+
                 return true;
             } catch (IllegalArgumentException e) {
                 // TODO Auto-generated catch block
@@ -319,17 +301,24 @@ public class MediaService extends Service implements MediaPlayerControl,
         return false;
     }
 
+
     //--MediaPlayerControl methods----------------------------------------------------
     public void start() {
-      mc.setPlayingText(currentlyPlaying.mTitle + " - "+currentlyPlaying.mAlbum.mName);
+      mc.setPlayingText(mCurrentlyPlaying.mTitle + " - "+mCurrentlyPlaying.mAlbum.mName);
       mIsPlaying = true;
-      updateNotification();
+      startForeground(NOTIFICATION, buildNotification());
       mp.start();
     }
 
+    @Override
+    public boolean isCurrentSongSet(){
+        if(mCurrentlyPlaying!=null){
+            return true;
+        }
+        return false;
+    }
     public void pause() {
       mIsPlaying = false;
-      updateNotification();
       mp.pause();
     }
 
@@ -362,6 +351,14 @@ public class MediaService extends Service implements MediaPlayerControl,
       return true;
     }
 
+    @Override
+    public String getCurrentSongTitle() {
+        if(mCurrentlyPlaying!=null){
+            return mCurrentlyPlaying.mTitle;
+        }
+        return null;
+    }
+
     public boolean canSeekForward() {
       return true;
     }
@@ -376,11 +373,34 @@ public class MediaService extends Service implements MediaPlayerControl,
 //        MP.reset();
 //        //mc.hide();
 //    }
-
+    public void setPrevNextListeners(){
+        String tag = "MediaService-setPrevNextListeners";
+        View.OnClickListener nextClickListener = null;
+        if(mCurrentlyPlaying.index < (mCurrentlyPlaying.mAlbum.mSongs.size()-1)){
+            nextClickListener = new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    skipNext();
+                }
+            };
+        }
+        View.OnClickListener prevClickListener = null;
+        if(mCurrentlyPlaying.index > 0){
+            prevClickListener = new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    skipPrev();
+                }
+            };
+        }
+        if(mc!=null){
+            mc.setPrevNextListeners(nextClickListener, prevClickListener);
+        }
+        else Log.e(tag, "couldn't setPrevNextListeners");
+    }
     @Override
     public void onPrepared(MediaPlayer mp) {
         Log.d("onPrepared", "in onPrepared");
-        mc.setEnabled(true);
         mc.doPauseResume();
 
 //        handler.post(new Runnable() {
@@ -400,24 +420,26 @@ public class MediaService extends Service implements MediaPlayerControl,
 
     @Override
     public void onCompletion(MediaPlayer MP) {
+        Log.d(TAG, "onCompletion, about to update notification");
 //        TextView tv = (TextView)findViewById(R.id.curplaying_textview);
 //        if(tv!=null){
 //            mc.setPlayingText("", tv);
 //        }
         mIsPlaying = false;
-        updateNotification();
+        stopForeground(true);
         MP.reset();
     }
 
-    private void updateNotification(){
-        if(mIsPlaying){
-            showNotification();
+    public void setMediaController(myMediaController mc) {
+        String tag = "setMediaController";
+        if(mc!=null){
+            this.mc = mc;
+            mc.setMediaPlayer(this);
         }
         else{
-            mNM.cancel(NOTIFICATION);
+            Log.e(tag, "MediaController argument is NULL!");
         }
     }
-    public void setMediaController(myMediaController mc) {
-        this.mc = mc;
-    }
+
+
 }
