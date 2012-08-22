@@ -147,6 +147,7 @@ public class MediaService extends Service implements MediaPlayerControl,
         mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
         mp = new MediaPlayer();
         mp.setOnPreparedListener(this);
+        mp.setOnCompletionListener(this);
         mAlbums = new ArrayList<Album>();
 
 
@@ -238,10 +239,10 @@ public class MediaService extends Service implements MediaPlayerControl,
 
     private Notification buildNotification(){
         // In this sample, we'll use the same text for the ticker and the expanded notification
-        CharSequence text = getText(R.string.media_service_started);
+        CharSequence text = mCurrentlyPlaying.mTitle;
 
         // Set the icon, scrolling text and timestamp
-        Notification notification = new Notification(R.drawable.notify_panel_notification_icon_bg, text,
+        Notification notification = new Notification(android.R.drawable.ic_media_play, text,
                 System.currentTimeMillis());
 
         // The PendingIntent to launch our activity if the user selects this notification
@@ -271,7 +272,6 @@ public class MediaService extends Service implements MediaPlayerControl,
     }
     private boolean playSong(Song song){
         String tag = "playSong";
-        startForeground(NOTIFICATION, buildNotification());
         ZipEntryRO zfile = song.mFile;
         Log.d(tag, "It is unCompressed"+zfile.isUncompressed());
         if(zfile.isUncompressed()){
@@ -279,12 +279,13 @@ public class MediaService extends Service implements MediaPlayerControl,
             mp.reset();
             AssetFileDescriptor afd = zrf.getAssetFileDescriptor(zfile.mFileName);
             mCurrentlyPlaying = song; //.mTitle + " - "+song.mAlbum.mName;
+            //buildNotification() depends on mCurrentlyPlaying being set. so yeah
+            startForeground(NOTIFICATION, buildNotification());
             setPrevNextListeners();
             mc.setEnabled(true);
             try {
                 mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
                 mp.prepare();
-
                 return true;
             } catch (IllegalArgumentException e) {
                 // TODO Auto-generated catch block
@@ -425,9 +426,15 @@ public class MediaService extends Service implements MediaPlayerControl,
 //        if(tv!=null){
 //            mc.setPlayingText("", tv);
 //        }
+        MP.reset();
+        int nextIndex = mCurrentlyPlaying.index+1;
+        ArrayList<Song> songs = mCurrentlyPlaying.mAlbum.mSongs;
+        if( nextIndex < songs.size()){
+            playSong(songs.get(nextIndex));
+            return;
+        }
         mIsPlaying = false;
         stopForeground(true);
-        MP.reset();
     }
 
     public void setMediaController(myMediaController mc) {
