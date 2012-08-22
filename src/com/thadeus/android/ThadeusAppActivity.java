@@ -11,10 +11,12 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 public class ThadeusAppActivity extends Activity {
@@ -25,6 +27,13 @@ public class ThadeusAppActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+
+        LinearLayout albumButton = (LinearLayout) findViewById(R.id.album_selector_layout);
+        LinearLayout videoButton = (LinearLayout) findViewById(R.id.video_selector_layout);
+        LinearLayout linkButton = (LinearLayout) findViewById(R.id.link_selector_layout);
+        videoButton.setBackgroundColor(Color.rgb(100, 50, 50));
+        albumButton.setBackgroundColor(Color.rgb(50,100, 50));
+        linkButton.setBackgroundColor(Color.rgb(50, 50, 100));
 
         if(!expansionFilesDelivered()){//if the files aren't here, we need to check if we can download them.
             Toast.makeText(this, "expansion files not found", Toast.LENGTH_LONG).show();

@@ -59,20 +59,13 @@ import java.util.Locale;
 
         private MediaPlayerControl  mPlayer;
         private Context             mContext;
-        private View                mAnchor;
         private View                mRoot;
-        private WindowManager       mWindowManager;
-        private Window              mWindow;
-        private View                mDecor;
         private ProgressBar         mProgress;
         private TextView            mEndTime, mCurrentTime;
         private boolean             mShowing;
         private boolean             mDragging;
-        private static final int    sDefaultTimeout = 3000;
-        private static final int    FADE_OUT = 1;
         private static final int    SHOW_PROGRESS = 2;
         private boolean             mUseFastForward;
-        private boolean             mFromXml;
         private boolean             mListenersSet;
         private View.OnClickListener mNextListener, mPrevListener;
         StringBuilder               mFormatBuilder;
@@ -88,7 +81,6 @@ import java.util.Locale;
             mRoot = this;
             mContext = context;
             mUseFastForward = true;
-            mFromXml = true;
         }
 
         @Override
@@ -101,35 +93,14 @@ import java.util.Locale;
             super(context);
             mContext = context;
             mUseFastForward = useFastForward;
-            initFloatingWindow();
         }
 
         public myMediaController(Context context) {
             super(context);
             mContext = context;
             mUseFastForward = true;
-            initFloatingWindow();
         }
 
-        private void initFloatingWindow() {
-            mWindowManager = (WindowManager)mContext.getSystemService(Context.WINDOW_SERVICE);
-//            mWindow = makeNewWindow(mContext);
-//            mWindow.setWindowManager(mWindowManager, null, null);
-//            mWindow.requestFeature(Window.FEATURE_NO_TITLE);
-//            mDecor = mWindow.getDecorView();
-//            mDecor.setOnTouchListener(mTouchListener);
-//            mWindow.setContentView(this);
-//            mWindow.setBackgroundDrawableResource(android.R.color.transparent);
-//
-//            // While the media controller is up, the volume control keys should
-//            // affect the media stream type
-//            mWindow.setVolumeControlStream(AudioManager.STREAM_MUSIC);
-//
-//            setFocusable(true);
-//            setFocusableInTouchMode(true);
-//            setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
-//            requestFocus();
-        }
 
         private OnTouchListener mTouchListener = new OnTouchListener() {
             public boolean onTouch(View v, MotionEvent event) {
@@ -153,12 +124,6 @@ import java.util.Locale;
          * @param view The view to which to anchor the controller when it is visible.
          */
         public void setAnchorView(View view) {
-            mAnchor = view;
-
-            FrameLayout.LayoutParams frameParams = new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-            );
 
             removeAllViews();
             View v = makeControllerView(view);
@@ -194,27 +159,21 @@ import java.util.Locale;
             mFfwdButton = (ImageButton) v.findViewById(R.id.mc_ff);
             if (mFfwdButton != null) {
                 mFfwdButton.setOnClickListener(mFfwdListener);
-                if (!mFromXml) {
-                    mFfwdButton.setVisibility(mUseFastForward ? View.VISIBLE : View.GONE);
-                }
             }
 
             mRewButton = (ImageButton) v.findViewById(R.id.mc_rew);
             if (mRewButton != null) {
                 mRewButton.setOnClickListener(mRewListener);
-                if (!mFromXml) {
-                    mRewButton.setVisibility(mUseFastForward ? View.VISIBLE : View.GONE);
-                }
             }
 
             // By default these are hidden. They will be enabled when setPrevNextListeners() is called
             mNextButton = (ImageButton) v.findViewById(R.id.mc_next);
-            if (mNextButton != null && !mFromXml && !mListenersSet) {
-                mNextButton.setVisibility(View.GONE);
+            if (mNextButton != null && !mListenersSet) {
+                mNextButton.setEnabled(false);
             }
             mPrevButton = (ImageButton) v.findViewById(R.id.mc_prev);
-            if (mPrevButton != null && !mFromXml && !mListenersSet) {
-                mPrevButton.setVisibility(View.GONE);
+            if (mPrevButton != null && !mListenersSet) {
+                mPrevButton.setEnabled(false);
             }
 
             mProgress = (ProgressBar) v.findViewById(R.id.mc_progbar);
@@ -232,14 +191,6 @@ import java.util.Locale;
             mFormatter = new Formatter(mFormatBuilder, Locale.getDefault());
 
             installPrevNextListeners();
-        }
-
-        /**
-         * Show the controller on screen. It will go away
-         * automatically after 3 seconds of inactivity.
-         */
-        public void show() {
-            //show(sDefaultTimeout);
         }
 
         /**
@@ -265,84 +216,21 @@ import java.util.Locale;
             }
         }
 
-        /**
-         * Show the controller on screen. It will go away
-         * automatically after 'timeout' milliseconds of inactivity.
-         * @param timeout The timeout in milliseconds. Use 0 to show
-         * the controller until hide() is called.
-         */
-//        public void show(int timeout) {
-//
-//            if (!mShowing && mAnchor != null) {
-//                setProgress();
-//                if (mPauseButton != null) {
-//                    mPauseButton.requestFocus();
-//                }
-//                disableUnsupportedButtons();
-//
-//                int [] anchorpos = new int[2];
-//                mAnchor.getLocationOnScreen(anchorpos);
-//
-//                WindowManager.LayoutParams p = new WindowManager.LayoutParams();
-//                p.gravity = Gravity.TOP;
-//                p.width = mAnchor.getWidth();
-//                p.height = LayoutParams.WRAP_CONTENT;
-//                p.x = 0;
-//                p.y = anchorpos[1] + mAnchor.getHeight() - p.height;
-//                p.format = PixelFormat.TRANSLUCENT;
-//                p.type = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL;
-//                p.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
-//                p.token = null;
-//                p.windowAnimations = 0; // android.R.style.DropDownAnimationDown;
-//                mWindowManager.addView(mDecor, p);
-//                mShowing = true;
-//            }
-//            updatePausePlay();
-//
-//            // cause the progress bar to be updated even if mShowing
-//            // was already true.  This happens, for example, if we're
-//            // paused with the progress bar showing the user hits play.
-//            mHandler.sendEmptyMessage(SHOW_PROGRESS);
-//
-//            Message msg = mHandler.obtainMessage(FADE_OUT);
-//            if (timeout != 0) {
-//                mHandler.removeMessages(FADE_OUT);
-//                mHandler.sendMessageDelayed(msg, timeout);
-//            }
-//        }
-
         public boolean isShowing() {
             return mShowing;
         }
 
-        public void setPlayingText(String text, TextView view){
+        public void setPlayingText(String text){
             String tag = "setPlayingText";
             String dispText = getContext().getResources().getString(R.string.curplaying_text) + " "+text;
+            TextView view = (TextView) findViewById(R.id.curplaying_textview);
             if(view!=null){
                 view.setText(dispText);
             }
             else{
-                Log.d(tag, "couldn't set text, TextView is null");
+                Log.d(tag, "couldn't set CurrentlyPlaying text, TextView is null");
             }
         }
-
-//        /**
-//         * Remove the controller from the screen.
-//         */
-//        public void hide() {
-//            if (mAnchor == null)
-//                return;
-//
-//            if (mShowing) {
-//                try {
-//                    mHandler.removeMessages(SHOW_PROGRESS);
-//                    mWindowManager.removeView(mDecor);
-//                } catch (IllegalArgumentException ex) {
-//                    Log.w("MediaController", "already removed");
-//                }
-//                mShowing = false;
-//            }
-//        }
 
         private Handler mHandler = new Handler() {
             @Override
@@ -365,6 +253,7 @@ import java.util.Locale;
             }
         };
         public void emptyQueue(){
+            Log.d("emptyQueue", "emptying the queue");
             mHandler.removeMessages(SHOW_PROGRESS);
         }
 
@@ -608,10 +497,10 @@ import java.util.Locale;
             if (mRoot != null) {
                 installPrevNextListeners();
 
-                if (mNextButton != null && !mFromXml) {
+                if (mNextButton != null) {
                     mNextButton.setVisibility(View.VISIBLE);
                 }
-                if (mPrevButton != null && !mFromXml) {
+                if (mPrevButton != null) {
                     mPrevButton.setVisibility(View.VISIBLE);
                 }
             }

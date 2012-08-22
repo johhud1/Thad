@@ -7,5 +7,10 @@
     <string name="album_section_description">Album section descriptions goes here</string>
     <string name="link_section_description">link section description goes here</string>
     <string name="curplaying_text">Playing: </string>
+    <string name="media_service_disconnected">media service disconnected</string>
+    <string name="media_service_connected">media service connected</string>
+    <string name="media_service_started">media service started</string>
+    <string name="media_service_label">media service label</string>
+    <string name="media_service_stopped">media service stopped</string>
 
 </resources>
