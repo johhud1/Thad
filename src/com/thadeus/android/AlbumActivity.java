@@ -4,9 +4,11 @@ package com.thadeus.android;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Currency;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.ResourceBundle;
 
 import com.android.vending.expansion.zipfile.APKExpansionSupport;
@@ -16,6 +18,8 @@ import com.google.android.vending.expansion.downloader.Helpers;
 import com.google.android.vending.licensing.APKExpansionPolicy;
 import com.google.android.vending.licensing.Obfuscator;
 import com.google.android.vending.licensing.ValidationException;
+import com.thadeus.android.MediaService.Album;
+import com.thadeus.android.MediaService.Song;
 import com.thadeus.android.myMediaController.MediaPlayerControl;
 
 import android.app.Activity;
@@ -56,10 +60,11 @@ public class AlbumActivity extends ExpandableListActivity implements OnChildClic
     private String audioFile;
     private myMediaController mc;
     private Context mContext = this;
-    private SimpleExpandableListAdapter mListAdapter;
+    private AbstractExpandableListAdapter<Album, Song> mListAdapter;
     private boolean mIsBound;
     private MediaService mBoundService;
     private Handler handler = new Handler();
+    private Bundle mSavedInstanceState;
 
 
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -77,13 +82,43 @@ public class AlbumActivity extends ExpandableListActivity implements OnChildClic
 //                    Toast.LENGTH_SHORT).show();
             //mc.setMediaPlayer(mBoundService);
             mBoundService.setMediaController(mc);
-            mListAdapter = new SimpleExpandableListAdapter(mContext,
-                                                           mBoundService.createAlbumList(), R.layout.album_listrow,
-                                                           new String[] { LFnC.album_listkey }, new int[] {R.id.albumlist_textview},
-                                                           mBoundService.createSongList(), R.layout.songrow_layout, new String[] {LFnC.song_listkey},
-                                                           new int[] {R.id.songitem_textview});
+            //HashMap<String, Album> albumMap = mBoundService.getAlbumMap();
+            //Album[] alb = new Album[albumMap.size()];
+            //albumMap.values().toArray(alb);
+
+            List<Entry<Album, List<Song>>> songList = new ArrayList<Entry<Album, List<Song>>>();
+            songList = mBoundService.createExpandList(songList);
+//            for(int i=0; i<alb.length; i++){
+//                songList.add(mBoundService.createSongList(alb[i]));
+//            }
+            mListAdapter = new AbstractExpandableListAdapter<Album, Song>(mContext,
+                R.layout.album_listrow,
+                R.layout.album_listrow,
+                R.layout.songrow_layout,
+                new int[] {R.id.albumlist_textview},
+                new int[] {R.id.songitem_textview},
+                songList);
+
+//            mListAdapter = new SimpleExpandableListAdapter(mContext,
+//                                                           mBoundService.createAlbumList(alb),
+//                                                           R.layout.album_listrow,
+//                                                           new String[] { LFnC.album_listkey },
+//                                                           new int[] {R.id.albumlist_textview},
+//                                                           songList,
+//                                                           R.layout.songrow_layout,
+//                                                           new String[] {LFnC.song_listkey},
+//                                                           new int[] {R.id.songitem_textview});
             mc.updateUI();
             setListAdapter(mListAdapter);
+//            int[] groups = mSavedInstanceState.getIntArray(LFnC.bundle_key_expandedGroups);
+//            if( groups != null){
+//                for(int i=0; i< groups.length; i++){
+//                    if(mListAdapter.getGroup(groups[i])!=null){
+//                        getExpandableListView().expandGroup(groups[i]);
+//                    }
+//                }
+//
+//            }
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -98,9 +133,11 @@ public class AlbumActivity extends ExpandableListActivity implements OnChildClic
         }
 
     };
+
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.album_activity_layout);
+
 
         startService(new Intent(this, MediaService.class));
         doBindService();
@@ -119,6 +156,7 @@ public class AlbumActivity extends ExpandableListActivity implements OnChildClic
         String tag = "onChildClick";
         if(mBoundService!=null){
             mBoundService.playGroupChildPos(groupPosition, childPosition);
+            //(groupPosition, childPosition);
         }
         else{
             Log.e(tag, "can't play song, mBoundService (media service) is null");
@@ -130,6 +168,7 @@ public class AlbumActivity extends ExpandableListActivity implements OnChildClic
     protected void onStop() {
       super.onStop();
       mc.emptyQueue();
+
 //      if(mp.isPlaying()){
 //          mp.pause();
 //          mp.stop();
@@ -161,6 +200,11 @@ public class AlbumActivity extends ExpandableListActivity implements OnChildClic
             unbindService(mConnection);
             mIsBound = false;
         }
+    }
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState){
+//        getExpandableListView().
+//        savedInstanceState.putIntArray(LFnC.bundle_key_expandedGroups, )
     }
 
     @Override

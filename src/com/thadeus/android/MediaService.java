@@ -2,8 +2,13 @@ package com.thadeus.android;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.android.vending.expansion.zipfile.APKExpansionSupport;
 import com.android.vending.expansion.zipfile.ZipResourceFile;
@@ -21,18 +26,23 @@ import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewDebug.FlagToString;
+import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class MediaService extends Service implements MediaPlayerControl,
                                 OnPreparedListener, OnCompletionListener{
     private String TAG = "MediaService";
-    private ArrayList<Album> mAlbums;
+    private ArrayList<Album> mAlbums = new ArrayList<Album>();
+   // private HashMap<String, Album> mAlbums;
+   // private ArrayList<HashMap<String, Album>> mGroupList = new ArrayList<HashMap<String, Album>>();
+   // private ArrayList<HashMap<String, Album>> mAlbums = new ArrayList<HashMap<String, Album>>();
     private MediaPlayer mp;
     private ZipResourceFile zrf;
     private Song mCurrentlyPlaying=null;
@@ -40,6 +50,7 @@ public class MediaService extends Service implements MediaPlayerControl,
     private String audioFile;
     private myMediaController mc;
     private boolean mIsPlaying;
+    //private ArrayList<Album> groupListAlbums = new ArrayList<Album>();
     private Handler handler = new Handler();
 
     // This is the object that receives interactions from clients.  See
@@ -51,7 +62,34 @@ public class MediaService extends Service implements MediaPlayerControl,
     private int NOTIFICATION = R.string.media_service_started;
     private NotificationManager mNM;
 
-    private class Song implements Comparable<Song>{
+    private final class MyEntry<K, V> implements Map.Entry<K, V> {
+        private final K key;
+        private V value;
+
+        public MyEntry(K key, V value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public K getKey() {
+            return key;
+        }
+
+        @Override
+        public V getValue() {
+            return value;
+        }
+
+        @Override
+        public V setValue(V value) {
+            V old = this.value;
+            this.value = value;
+            return old;
+        }
+    }
+
+    public class Song implements Comparable<Song>{
         public Album mAlbum;
         public String mTitle;
         public ZipEntryRO mFile;
@@ -67,9 +105,14 @@ public class MediaService extends Service implements MediaPlayerControl,
         public int compareTo(Song another) {
             return mTitle.compareTo(another.mTitle);
         }
+        @Override
+        public String toString(){
+            return mTitle;
+        }
     }
 
-    private class Album implements Comparable<Album>{
+    public class Album implements Comparable<Album>{
+        private String tag = "Album";
         public String mName;
         public ZipEntryRO mArt;
         ArrayList<Song> mSongs;
@@ -82,7 +125,8 @@ public class MediaService extends Service implements MediaPlayerControl,
             mName = name;
             mArt = art;
         }
-        public void addSong(Song song){
+
+        public void add(Song song){
             mSongs.add(song);
         }
         public void addArt(ZipEntryRO art){
@@ -96,7 +140,29 @@ public class MediaService extends Service implements MediaPlayerControl,
         public boolean equals(Object another){
             return mName.equals(((Album)another).mName);
         }
+        @Override
+        public String toString(){
+            return mName;
+        }
     }
+    public List<Entry<Album, List<Song>>> createExpandList(List<Entry<Album, List<Song>>> list){
+        for(int i=0; i<mAlbums.size();i++){
+            MyEntry<Album, List<Song>> entry = new MyEntry(mAlbums.get(i), mAlbums.get(i).mSongs);
+            list.add(entry);
+        }
+        return list;
+    }
+
+//    public List<HashMap<String, Album>> createAlbumList(Album[] albs){
+//        ArrayList<HashMap<String, Album>> result = new ArrayList<HashMap<String, Album>>();
+//        for(int i=0; i<albs.length; i++){
+//            HashMap<String, Album> h = new HashMap<String, Album>();
+//            h.put(LFnC.album_listkey, albs[i]);
+//            result.add(h);
+//            groupListAlbums.add(albs[i]);
+//        }
+//        return (List<HashMap<String, Album>>)result;
+//    }
     /**
      * Class for clients to access.  Because we know this service always
      * runs in the same process as its clients, we don't need to deal with
@@ -108,35 +174,40 @@ public class MediaService extends Service implements MediaPlayerControl,
         }
     }
 
-    public List createAlbumList(){
-        String TAG = "createAlbumList";
-        ArrayList<HashMap> result = new ArrayList<HashMap>();
-        for(int i=0; i<mAlbums.size(); i++){
-            Log.d(TAG, "mAlbums.size = "+mAlbums.size()+" name: "+mAlbums.get(i).mName);
-            HashMap h = new HashMap();
-            h.put(LFnC.album_listkey, mAlbums.get(i).mName);
-            result.add(h);
-
-        }
-        return (List)result;
+    public ArrayList<Album> getAlbums(){
+        String TAG = "getAlbumll";
+        return mAlbums;
     }
+//
+//    public HashMap<String, Album> getAlbumMap(){
+//        String TAG = "createAlbumList";
+//        return mAlbums;
+//    }
 
-    public List createSongList(){
+    public ArrayList<HashMap<String, Song>> createSongList(Album album){
         String TAG = "createSongList";
-        ArrayList<ArrayList<HashMap>> result = new ArrayList<ArrayList<HashMap>>();
-        for(int i=0; i<mAlbums.size(); i++){
-            ArrayList<HashMap> songs = new ArrayList<HashMap>();
-            Album alb = mAlbums.get(i);
-            for(int k=0; k<alb.mSongs.size(); k++){
-                Log.d(TAG, "alb.mName= "+alb.mName+" has "+alb.mSongs.size()+" number of songs."+
-                      " adding song "+alb.mSongs.get(k).mTitle);
-                HashMap h = new HashMap();
-                h.put(LFnC.song_listkey, alb.mSongs.get(k).mTitle);
-                songs.add(h);
-            }
-            result.add(songs);
+        Log.d(TAG, "creating songList for album "+album.mName);
+        ArrayList<HashMap<String, Song>> result = new ArrayList<HashMap<String, Song>>();
+        for(int i=0; i<album.mSongs.size(); i++){
+            Song song = album.mSongs.get(i);
+            HashMap<String, Song> h = new HashMap<String, Song>();
+            h.put(LFnC.song_listkey, song);
+            result.add(song.index, h);
+//            ArrayList<HashMap> songs = new ArrayList<HashMap>();
+//            Collection<Album> albs = albumList.get(i).values();
+//            for(int j=0; j<albs.size(); j++){
+//                Album alb = albumList.
+//                for(int k=0; k<alb.mSongs.size(); k++){
+//                    Log.d(TAG, "alb.mName= "+alb.mName+" has "+alb.mSongs.size()+" number of songs."+
+//                          " adding song "+alb.mSongs.get(k).mTitle);
+//                    HashMap h = new HashMap();
+//                    h.put(LFnC.song_listkey, alb.mSongs.get(k));
+//                    songs.add(h);
+//                }
+//                result.add(songs);
+//            }
         }
-        return (List)result;
+        return result;
     }
 
 
@@ -148,7 +219,7 @@ public class MediaService extends Service implements MediaPlayerControl,
         mp = new MediaPlayer();
         mp.setOnPreparedListener(this);
         mp.setOnCompletionListener(this);
-        mAlbums = new ArrayList<Album>();
+        //mAlbums = new HashMap<String, Album>();
 
 
         String filename = Helpers.getSaveFilePath(this) + "/" +
@@ -185,26 +256,29 @@ public class MediaService extends Service implements MediaPlayerControl,
             Song song;
             Album album;
             if(splitFolder.length>2){
-                Log.d(TAG, "split into strings "+splitFolder[1]+" / "+splitFolder[2]+" of length "+splitFolder.length);
-                album = new Album(splitFolder[1]);
+                Log.d(TAG, "split into strings "+splitFolder[LFnC.folder_album_depth]+" / "
+                      +splitFolder[LFnC.folder_song_depth]+" of length "+splitFolder.length);
+                album = new Album(splitFolder[LFnC.folder_album_depth]);
                 if(!mAlbums.contains(album)){
                     Log.d(TAG, "couldn't find album "+album.mName+" in existing list, adding album");
                     mAlbums.add(album);
                 }else{
                     album = mAlbums.get(mAlbums.indexOf(album));
                 }
-                splitFiles = splitFolder[2].split("[.]");
-                Log.d(TAG, "splitFiles,split of string "+splitFolder[2]+" on '.' has length "+splitFiles.length);
+                splitFiles = splitFolder[LFnC.folder_song_depth].split("[.]");
+                Log.d(TAG, "splitFiles,split of string "+splitFolder[LFnC.folder_song_depth]+
+                      " on '.' has length "+splitFiles.length);
                 if(splitFiles.length > 1){
-                    if(splitFiles[1].equals(LFnC.audio_fileformat)){
-                        Log.d(TAG, "found file "+splitFolder[1]+
+                    if(splitFiles[LFnC.file_extension_depth].equals(LFnC.audio_fileformat)){
+                        Log.d(TAG, "found file "+splitFolder[LFnC.folder_song_depth]+
                               ", think it's a song. making new song, with album "
                               +album.mName+", song title "+splitFiles[0]);
-                        song = new Song(album, splitFiles[0], ze[i], album.mSongs.size());
-                        album.addSong(song);
+                        song = new Song(album, splitFiles[LFnC.file_songname_depth], ze[i], album.mSongs.size());
+                        album.add(song);
                     }
                     if(splitFiles[1].equals(LFnC.albumart_fileformat)){
-                        Log.d(TAG, "found file "+splitFolder[2]+", think it's art. adding it to album "+album.mName);
+                        Log.d(TAG, "found file "+splitFolder[LFnC.folder_song_depth]+
+                              ", think it's art. adding it to album "+album.mName);
                         album.addArt(ze[i]);
                     }
                 }
@@ -321,6 +395,7 @@ public class MediaService extends Service implements MediaPlayerControl,
     public void pause() {
       mIsPlaying = false;
       mp.pause();
+      stopForeground(true);
     }
 
     public int getDuration() {
@@ -414,6 +489,7 @@ public class MediaService extends Service implements MediaPlayerControl,
     public void playGroupChildPos(int groupPosition, int childPosition){
         String tag = "playGroupChildPos";
         Song song = mAlbums.get(groupPosition).mSongs.get(childPosition);
+            //mAlbums.get(groupPosition).mSongs.get(childPosition);
         Log.d(tag, "group position "+groupPosition+" childPosition "+childPosition+". Got song "
               +song.mTitle);
         playSong(song);

@@ -6,6 +6,11 @@ public class LFnC {
     public static String song_listkey = "song_key";
     public static String audio_fileformat = "mp3";
     public static String albumart_fileformat = "jpg";
+    public static String bundle_key_expandedGroups = "expanded_groups_array";
+    public static int folder_album_depth = 1;
+    public static int folder_song_depth = 2;
+    public static int file_songname_depth = 0;
+    public static int file_extension_depth=1;
 
     public static class XAPKFile {
         public final boolean mIsMain;
@@ -18,6 +23,6 @@ public class LFnC {
             mFileSize = fileSize; //in bytes
         }
     }
-    public static XAPKFile[] xAPKS = {new XAPKFile(true, 1, 64912563)};
+    public static XAPKFile[] xAPKS = {new XAPKFile(true, 1, 246705792)};
 
 }
