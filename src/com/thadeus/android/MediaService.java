@@ -115,7 +115,7 @@ public class MediaService extends Service implements MediaPlayerControl,
         private String tag = "Album";
         public String mName;
         public ZipEntryRO mArt;
-        ArrayList<Song> mSongs;
+        ArrayList<Song> mSongs = new ArrayList<Song>(LFnC.albumSongsListInitialSize);
         public Album(String name){
             mSongs = new ArrayList<Song>();
             mName = name;
@@ -128,6 +128,13 @@ public class MediaService extends Service implements MediaPlayerControl,
 
         public void add(Song song){
             mSongs.add(song);
+        }
+        public void add(int index, Song song){
+            //stupidest hack ever!
+            for(int k = (index+1 - mSongs.size()); k>0; k--){
+                mSongs.add(null);
+            }
+            mSongs.set(index, song);
         }
         public void addArt(ZipEntryRO art){
             mArt = art;
@@ -153,16 +160,6 @@ public class MediaService extends Service implements MediaPlayerControl,
         return list;
     }
 
-//    public List<HashMap<String, Album>> createAlbumList(Album[] albs){
-//        ArrayList<HashMap<String, Album>> result = new ArrayList<HashMap<String, Album>>();
-//        for(int i=0; i<albs.length; i++){
-//            HashMap<String, Album> h = new HashMap<String, Album>();
-//            h.put(LFnC.album_listkey, albs[i]);
-//            result.add(h);
-//            groupListAlbums.add(albs[i]);
-//        }
-//        return (List<HashMap<String, Album>>)result;
-//    }
     /**
      * Class for clients to access.  Because we know this service always
      * runs in the same process as its clients, we don't need to deal with
@@ -178,38 +175,6 @@ public class MediaService extends Service implements MediaPlayerControl,
         String TAG = "getAlbumll";
         return mAlbums;
     }
-//
-//    public HashMap<String, Album> getAlbumMap(){
-//        String TAG = "createAlbumList";
-//        return mAlbums;
-//    }
-
-    public ArrayList<HashMap<String, Song>> createSongList(Album album){
-        String TAG = "createSongList";
-        Log.d(TAG, "creating songList for album "+album.mName);
-        ArrayList<HashMap<String, Song>> result = new ArrayList<HashMap<String, Song>>();
-        for(int i=0; i<album.mSongs.size(); i++){
-            Song song = album.mSongs.get(i);
-            HashMap<String, Song> h = new HashMap<String, Song>();
-            h.put(LFnC.song_listkey, song);
-            result.add(song.index, h);
-//            ArrayList<HashMap> songs = new ArrayList<HashMap>();
-//            Collection<Album> albs = albumList.get(i).values();
-//            for(int j=0; j<albs.size(); j++){
-//                Album alb = albumList.
-//                for(int k=0; k<alb.mSongs.size(); k++){
-//                    Log.d(TAG, "alb.mName= "+alb.mName+" has "+alb.mSongs.size()+" number of songs."+
-//                          " adding song "+alb.mSongs.get(k).mTitle);
-//                    HashMap h = new HashMap();
-//                    h.put(LFnC.song_listkey, alb.mSongs.get(k));
-//                    songs.add(h);
-//                }
-//                result.add(songs);
-//            }
-        }
-        return result;
-    }
-
 
     @Override
     public void onCreate() {
@@ -255,7 +220,7 @@ public class MediaService extends Service implements MediaPlayerControl,
             String[] splitFiles;
             Song song;
             Album album;
-            if(splitFolder.length>2){
+            if(splitFolder.length>1){
                 Log.d(TAG, "split into strings "+splitFolder[LFnC.folder_album_depth]+" / "
                       +splitFolder[LFnC.folder_song_depth]+" of length "+splitFolder.length);
                 album = new Album(splitFolder[LFnC.folder_album_depth]);
@@ -268,15 +233,16 @@ public class MediaService extends Service implements MediaPlayerControl,
                 splitFiles = splitFolder[LFnC.folder_song_depth].split("[.]");
                 Log.d(TAG, "splitFiles,split of string "+splitFolder[LFnC.folder_song_depth]+
                       " on '.' has length "+splitFiles.length);
-                if(splitFiles.length > 1){
+                if(splitFiles.length > 2){
                     if(splitFiles[LFnC.file_extension_depth].equals(LFnC.audio_fileformat)){
                         Log.d(TAG, "found file "+splitFolder[LFnC.folder_song_depth]+
                               ", think it's a song. making new song, with album "
-                              +album.mName+", song title "+splitFiles[0]);
-                        song = new Song(album, splitFiles[LFnC.file_songname_depth], ze[i], album.mSongs.size());
-                        album.add(song);
+                              +album.mName+", song title "+splitFiles[LFnC.file_songname_depth]);
+                        int tracknum = Integer.valueOf(splitFiles[LFnC.file_tracknum_depth]);
+                        song = new Song(album, splitFiles[LFnC.file_songname_depth], ze[i], tracknum-1);
+                        album.add(tracknum-1, song);
                     }
-                    if(splitFiles[1].equals(LFnC.albumart_fileformat)){
+                    if(splitFiles[LFnC.file_extension_depth].equals(LFnC.albumart_fileformat)){
                         Log.d(TAG, "found file "+splitFolder[LFnC.folder_song_depth]+
                               ", think it's art. adding it to album "+album.mName);
                         album.addArt(ze[i]);
@@ -341,8 +307,22 @@ public class MediaService extends Service implements MediaPlayerControl,
     private void skipNext(){
         playSong(mCurrentlyPlaying.mAlbum.mSongs.get(mCurrentlyPlaying.index+1));
     }
+    private boolean shouldSkipToPrev(){
+        float cur = mp.getCurrentPosition();
+        float dur = mp.getDuration();
+        float fraction = cur/dur;
+        if((fraction) < LFnC.skipPrevThresh){
+            return true;
+        }
+        return false;
+    }
     private void skipPrev(){
-        playSong(mCurrentlyPlaying.mAlbum.mSongs.get(mCurrentlyPlaying.index-1));
+        if(shouldSkipToPrev()){
+            playSong(mCurrentlyPlaying.mAlbum.mSongs.get(mCurrentlyPlaying.index-1));
+        }
+        else{
+            playSong(mCurrentlyPlaying);
+        }
     }
     private boolean playSong(Song song){
         String tag = "playSong";
@@ -498,10 +478,7 @@ public class MediaService extends Service implements MediaPlayerControl,
     @Override
     public void onCompletion(MediaPlayer MP) {
         Log.d(TAG, "onCompletion, about to update notification");
-//        TextView tv = (TextView)findViewById(R.id.curplaying_textview);
-//        if(tv!=null){
-//            mc.setPlayingText("", tv);
-//        }
+
         MP.reset();
         int nextIndex = mCurrentlyPlaying.index+1;
         ArrayList<Song> songs = mCurrentlyPlaying.mAlbum.mSongs;
@@ -511,6 +488,7 @@ public class MediaService extends Service implements MediaPlayerControl,
         }
         mIsPlaying = false;
         stopForeground(true);
+        stopSelf();
     }
 
     public void setMediaController(myMediaController mc) {

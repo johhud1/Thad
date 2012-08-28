@@ -32,22 +32,10 @@ import java.util.Locale;
      * buttons like "Play/Pause", "Rewind", "Fast Forward" and a progress
      * slider. It takes care of synchronizing the controls with the state
      * of the MediaPlayer.
-     * <p>
-     * The way to use this class is to instantiate it programatically.
-     * The MediaController will create a default set of controls
-     * and put them in a window floating above your application. Specifically,
-     * the controls will float above the view specified with setAnchorView().
-     * The window will disappear if left idle for three seconds and reappear
-     * when the user touches the anchor view.
-     * <p>
-     * Functions like show() and hide() have no effect when MediaController
-     * is created in an xml layout.
      *
      * MediaController will hide and
      * show the buttons according to these rules:
      * <ul>
-     * <li> The "previous" and "next" buttons are hidden until setPrevNextListeners()
-     *   has been called
      * <li> The "previous" and "next" buttons are visible but disabled if
      *   setPrevNextListeners() was called with null listeners
      * <li> The "rewind" and "fastforward" buttons are shown unless requested

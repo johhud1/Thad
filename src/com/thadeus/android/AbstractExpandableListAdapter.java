@@ -17,21 +17,13 @@ import android.widget.TextView;
 public class AbstractExpandableListAdapter<A, B> implements ExpandableListAdapter {
 
     private final List<Entry<A, List<B>>> objects;
-
     private final DataSetObservable dataSetObservable = new DataSetObservable();
-
     private final Context context;
-
     private final Integer groupClosedView;
-
     private final Integer groupExpandedView;
-
     private final Integer childView;
-
     private final LayoutInflater inflater;
-
     private int[] mChildToView;
-
     private int[] mGroupToView;
 
     public AbstractExpandableListAdapter(Context context, int groupClosedView,
@@ -137,21 +129,6 @@ public class AbstractExpandableListAdapter<A, B> implements ExpandableListAdapte
         return true;
     }
 
-//    public View getGroupView(int groupPosition, boolean isExpanded,
-//            View convertView, ViewGroup parent) {
-//
-//        if (convertView != null && convertView.getId() !=
-//                (isExpanded ? getGroupExpandedView() : getGroupClosedView())) {
-////          do nothing, we're good to go, nothing has changed.
-//        } else {
-////          something has changed, update.
-//            convertView = inflater.inflate(isExpanded ? getGroupExpandedView() :
-//                    getGroupClosedView(), parent, false);
-//            convertView.setTag(getObjects().get(groupPosition));
-//        }
-//
-//        return convertView;
-    //    }
     public View getGroupView(int groupPosition, boolean isExpanded, View convertView,
                              ViewGroup parent) {
         View v;

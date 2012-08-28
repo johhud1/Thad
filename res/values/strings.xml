@@ -12,5 +12,8 @@
     <string name="media_service_started">media service started</string>
     <string name="media_service_label">You are you listening to:</string>
     <string name="media_service_stopped">media service stopped</string>
+    <string name="youtube_tab_label">Youtube (Censored)</string>
+    <string name="vimeo_tab_label">Vimeo (uncensored)</string>
+    <string name="ok">ok</string>
 
 </resources>

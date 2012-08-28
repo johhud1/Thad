@@ -3,7 +3,8 @@
     android:id="@+id/album_activity_layout"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical"
+    android:background="@drawable/witherberry_logo_full" >
 
 
     <com.thadeus.android.myMediaController

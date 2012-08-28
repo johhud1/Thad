@@ -3,7 +3,8 @@
     android:id="@+id/LinearLayout1"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical"
+    android:background="@drawable/witherberry_logo_full" >
 
     <TextView
         android:id="@+id/hello"

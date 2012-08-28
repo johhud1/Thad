@@ -77,20 +77,12 @@ public class AlbumActivity extends ExpandableListActivity implements OnChildClic
             // cast its IBinder to a concrete class and directly access it.
             mBoundService = ((MediaService.LocalBinder)service).getService();
 
-//            // Tell the user about this for our demo.
-//            Toast.makeText(AlbumActivity.this, R.string.media_service_connected,
-//                    Toast.LENGTH_SHORT).show();
-            //mc.setMediaPlayer(mBoundService);
             mBoundService.setMediaController(mc);
-            //HashMap<String, Album> albumMap = mBoundService.getAlbumMap();
-            //Album[] alb = new Album[albumMap.size()];
-            //albumMap.values().toArray(alb);
+
 
             List<Entry<Album, List<Song>>> songList = new ArrayList<Entry<Album, List<Song>>>();
             songList = mBoundService.createExpandList(songList);
-//            for(int i=0; i<alb.length; i++){
-//                songList.add(mBoundService.createSongList(alb[i]));
-//            }
+
             mListAdapter = new AbstractExpandableListAdapter<Album, Song>(mContext,
                 R.layout.album_listrow,
                 R.layout.album_listrow,
@@ -99,26 +91,9 @@ public class AlbumActivity extends ExpandableListActivity implements OnChildClic
                 new int[] {R.id.songitem_textview},
                 songList);
 
-//            mListAdapter = new SimpleExpandableListAdapter(mContext,
-//                                                           mBoundService.createAlbumList(alb),
-//                                                           R.layout.album_listrow,
-//                                                           new String[] { LFnC.album_listkey },
-//                                                           new int[] {R.id.albumlist_textview},
-//                                                           songList,
-//                                                           R.layout.songrow_layout,
-//                                                           new String[] {LFnC.song_listkey},
-//                                                           new int[] {R.id.songitem_textview});
             mc.updateUI();
             setListAdapter(mListAdapter);
-//            int[] groups = mSavedInstanceState.getIntArray(LFnC.bundle_key_expandedGroups);
-//            if( groups != null){
-//                for(int i=0; i< groups.length; i++){
-//                    if(mListAdapter.getGroup(groups[i])!=null){
-//                        getExpandableListView().expandGroup(groups[i]);
-//                    }
-//                }
-//
-//            }
+
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -138,14 +113,10 @@ public class AlbumActivity extends ExpandableListActivity implements OnChildClic
         super.onCreate(savedInstanceState);
         setContentView(R.layout.album_activity_layout);
 
-
         startService(new Intent(this, MediaService.class));
         doBindService();
 
         mc = (myMediaController) findViewById(R.id.myMediaController1);
-//        mc.setMediaPlayer(mBoundService);
-
-        //mc.setAnchorView(findViewById(R.id.myMediaController1));
 
         getExpandableListView().setOnChildClickListener(this);
     }
@@ -156,7 +127,6 @@ public class AlbumActivity extends ExpandableListActivity implements OnChildClic
         String tag = "onChildClick";
         if(mBoundService!=null){
             mBoundService.playGroupChildPos(groupPosition, childPosition);
-            //(groupPosition, childPosition);
         }
         else{
             Log.e(tag, "can't play song, mBoundService (media service) is null");
