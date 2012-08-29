@@ -1,5 +1,7 @@
 package com.thadeus.android;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,6 +24,9 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnPreparedListener;
@@ -114,13 +119,13 @@ public class MediaService extends Service implements MediaPlayerControl,
     public class Album implements Comparable<Album>{
         private String tag = "Album";
         public String mName;
-        public ZipEntryRO mArt;
+        public BitmapDrawable mArt;
         ArrayList<Song> mSongs = new ArrayList<Song>(LFnC.albumSongsListInitialSize);
         public Album(String name){
             mSongs = new ArrayList<Song>();
             mName = name;
         }
-        public Album(String name, ZipEntryRO art){
+        public Album(String name, BitmapDrawable art){
             mSongs = new ArrayList<Song>();
             mName = name;
             mArt = art;
@@ -136,8 +141,8 @@ public class MediaService extends Service implements MediaPlayerControl,
             }
             mSongs.set(index, song);
         }
-        public void addArt(ZipEntryRO art){
-            mArt = art;
+        public void addArt(BitmapDrawable bitmapDrawable){
+            mArt = bitmapDrawable;
         }
         @Override
         public int compareTo(Album another) {
@@ -242,10 +247,18 @@ public class MediaService extends Service implements MediaPlayerControl,
                         song = new Song(album, splitFiles[LFnC.file_songname_depth], ze[i], tracknum-1);
                         album.add(tracknum-1, song);
                     }
-                    if(splitFiles[LFnC.file_extension_depth].equals(LFnC.albumart_fileformat)){
-                        Log.d(TAG, "found file "+splitFolder[LFnC.folder_song_depth]+
-                              ", think it's art. adding it to album "+album.mName);
-                        album.addArt(ze[i]);
+                }
+                else if(splitFiles[LFnC.aa_file_extension_depth].equals(LFnC.albumart_fileformat)){
+                    Log.d(TAG, "found file "+splitFolder[LFnC.folder_song_depth]+
+                          ", think it's art. adding it to album "+album.mName);
+                    try {
+                        FileInputStream fis = ze[i].getAssetFileDescriptor().createInputStream();
+                        BufferedInputStream bis = new BufferedInputStream(fis);
+                        Bitmap albumArt = BitmapFactory.decodeStream(fis);
+                        album.addArt(new BitmapDrawable(albumArt));
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
                     }
                 }
             }

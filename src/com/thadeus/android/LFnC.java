@@ -18,9 +18,12 @@ public class LFnC {
     public static int file_tracknum_depth = 0;
     public static int file_songname_depth = 1;
     public static int file_extension_depth=2;
+    public static int aa_file_extension_depth = 1;
 
     public static final String youtube_userfeed = "witherberry";
     public static final String youtube_url_authorfield = "author";
+
+    public static final String thumbnail_local_dir = "thumbs";
 
     public static String youtube_tab_tag = "youtube_tab";
     public static String vimeo_tab_tag = "vimeo_tab";
@@ -38,6 +41,6 @@ public class LFnC {
             mFileSize = fileSize; //in bytes
         }
     }
-    public static XAPKFile[] xAPKS = {new XAPKFile(true, 1, 246703610)};
+    public static XAPKFile[] xAPKS = {new XAPKFile(true, 1, 238994939)};
 
 }

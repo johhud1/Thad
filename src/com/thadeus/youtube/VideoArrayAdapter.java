@@ -2,19 +2,22 @@ package com.thadeus.youtube;
 
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
-
-import com.thadeus.android.R;
 
 import android.app.ListActivity;
 import android.content.Context;
 import android.database.DataSetObserver;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -23,8 +26,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
+
+import com.thadeus.android.R;
 
 public class VideoArrayAdapter<T extends Item> extends BaseAdapter {
     private String TAG = "VideoArrayAdapter";
@@ -36,19 +40,36 @@ public class VideoArrayAdapter<T extends Item> extends BaseAdapter {
     //private HashMap<String, Drawable> thumbnails = new HashMap<String, Drawable>();
     private ArrayList<Drawable> thumbnails = new ArrayList<Drawable>();
 
-    private class GetThumbnails extends AsyncTask<ThumbUrlString, Integer, ArrayList<Drawable>>{
+    private class GetThumbnailsWeb extends AsyncTask<ThumbUrlString, Integer, ArrayList<Drawable>>{
         private String tag = "GetThumbnails";
 
         @Override
         protected ArrayList<Drawable> doInBackground(ThumbUrlString... params) {
             Log.d(tag, "doInBackGround");
+            Context c = VideoArrayAdapter.this.mContext;
             ArrayList<Drawable> result = new ArrayList<Drawable>();
+
             for(int i =0; params[i]!=null; i++){
                 try {
                     URL url = new URL(params[i].url);
                     InputStream thumbStream = url.openStream();
                     BufferedInputStream bis = new BufferedInputStream(thumbStream);
-                    Drawable thumbnail = Drawable.createFromStream(bis, "srcName?");
+                    Bitmap bitThumb = BitmapFactory.decodeStream(thumbStream);
+                    BitmapDrawable thumbnail = new BitmapDrawable(c.getResources(), bitThumb);
+                    FileOutputStream f = null;
+                    if(list instanceof YoutubeVideoFeed){
+                        f = openYoutubeThumbFile(i, c);
+                    }
+                    else if(list instanceof VimeoVideoFeed){
+                        f = openYoutubeThumbFile(i, c);
+                    }
+                    if(f !=null){
+                        BufferedOutputStream bos = new BufferedOutputStream(f);
+                        thumbnail.getBitmap().compress(Bitmap.CompressFormat.PNG,
+                                                       1, bos);
+                        bos.flush();
+                        bos.close();
+                    }
                     result.add(thumbnail);
 
                 } catch (IOException e) {
@@ -58,6 +79,16 @@ public class VideoArrayAdapter<T extends Item> extends BaseAdapter {
 
             }
             return result;
+        }
+        private FileOutputStream openYoutubeThumbFile(int i, Context c) throws FileNotFoundException{
+            FileOutputStream f = c.openFileOutput(((YoutubeVideo)list.items.get(i)).id, Context.MODE_WORLD_READABLE);
+            return f;
+        }
+        private FileOutputStream openVimeoThumbFile(int i, Context c) throws FileNotFoundException{
+            Log.e(tag, "openVimeoThumbFile not implemented yet.");
+            //FileOutputStream f = c.openFileOutput(((VimeoVideo)list.items.get(i)), Context.MODE_PRIVATE);
+            //return f;
+            return null;
         }
 
         @Override
@@ -74,7 +105,9 @@ public class VideoArrayAdapter<T extends Item> extends BaseAdapter {
             Log.d(TAG, "finished downloading thumbnails, invalidating views");
             ((ListActivity) mContext).getListView().invalidateViews();
         }
-        Log.d(TAG, "finished downloading thumbs, activity doesn't seem to be listActivity though ??");
+        else{
+            Log.d(TAG, "finished downloading thumbs, activity doesn't seem to be listActivity though ??");
+        }
     }
 
     private class ThumbUrlString{
@@ -99,22 +132,43 @@ public class VideoArrayAdapter<T extends Item> extends BaseAdapter {
         else if(list instanceof VimeoVideoFeed){
             buildVimeoThumbNailsUrlsList(thumbList);
         }
-
-        thumbList.toArray(thumbUrlList);
-        GetThumbnails gthmbnls = (GetThumbnails) new GetThumbnails().execute(thumbUrlList);
-//        try {
-//            thumbnails = gthmbnls.get();
-//        } catch (InterruptedException e) {
-//            // TODO Auto-generated catch block
-//            e.printStackTrace();
-//        } catch (ExecutionException e) {
-//            // TODO Auto-generated catch block
-//            e.printStackTrace();
-//        }
-
+        if(haveThumbsAlready(thumbList)){
+            getLocalThumbs(thumbList);
+        }
+        else{
+            thumbList.toArray(thumbUrlList);
+            GetThumbnailsWeb gthmbnls = (GetThumbnailsWeb) new GetThumbnailsWeb().execute(thumbUrlList);
+        }
     }
 
+    private void getLocalThumbs(ArrayList<ThumbUrlString> thumbs) {
+        for(int i=0; i<thumbs.size(); i++){
+            File file = mContext.getFileStreamPath(thumbs.get(i).id);
+            if(file.exists()){
+               // BitmapFactory.Options options = new BitmapFactory.Options();
+               // options.inJustDecodeBounds=false;
+                Bitmap bitThmb = BitmapFactory.decodeFile(file.getAbsolutePath());
+//                BitmapDrawable tn = (BitmapDrawable)
+//                        BitmapDrawable.createFromPath(file.getAbsolutePath());
+                thumbnails.add(new BitmapDrawable(bitThmb));
+            }
+            else{
+                Log.e(TAG, "local thumbnail file "+file.getAbsolutePath()+" doesn't exist. (but it should!)");
+            }
+        }
+    }
 
+    private boolean haveThumbsAlready(ArrayList<ThumbUrlString> thumbs){
+        for(int i=0; i<thumbs.size(); i++){
+            File file = mContext.getFileStreamPath(thumbs.get(i).id);
+            if(!file.exists()){
+                Log.d(TAG, "haveThumbsAlready returning false");
+                return false;
+            }
+        }
+        Log.d(TAG, "haveThumbsAlready returning true");
+        return true;
+    }
 
 
     private void buildVimeoThumbNailsUrlsList(ArrayList<ThumbUrlString> thumbList) {
@@ -126,7 +180,7 @@ public class VideoArrayAdapter<T extends Item> extends BaseAdapter {
     private void buildYouTubeThumbNailUrlsList(ArrayList<ThumbUrlString> thumbList) {
         ArrayList<YoutubeVideo> vids = (ArrayList<YoutubeVideo>) list.items;
         for(int i=0; i<vids.size(); i++){
-            thumbList.add(new ThumbUrlString(vids.get(i).thumbnail.sqDefault));
+            thumbList.add(new ThumbUrlString(vids.get(i).thumbnail.sqDefault, vids.get(i).id));
         }
     }
 

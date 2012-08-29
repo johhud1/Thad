@@ -122,6 +122,14 @@ public class AlbumActivity extends ExpandableListActivity implements OnChildClic
     }
 
     @Override
+    public void onResume(){
+        super.onResume();
+        if(mc!= null){
+            mc.updateUI();
+        }
+    }
+
+    @Override
     public boolean onChildClick(ExpandableListView parent, View v, int groupPosition,
                                 int childPosition, long id) {
         String tag = "onChildClick";

@@ -226,12 +226,14 @@ import java.util.Locale;
         }
 
         public void updateUI(){
-            if(mPlayer.isCurrentSongSet()){
-                setPlayingText(mPlayer.getCurrentSongTitle());
-                mPlayer.setPrevNextListeners();
-                setEnabled(true);
-                mHandler.sendEmptyMessage(SHOW_PROGRESS);
-                return;
+            if(mPlayer != null){
+                if(mPlayer.isCurrentSongSet()){
+                    setPlayingText(mPlayer.getCurrentSongTitle());
+                    mPlayer.setPrevNextListeners();
+                    setEnabled(true);
+                    mHandler.sendEmptyMessage(SHOW_PROGRESS);
+                    return;
+                }
             }
         }
 

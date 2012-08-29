@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.thadeus.android.MediaService.Album;
+
 import android.content.Context;
 import android.database.DataSetObservable;
 import android.database.DataSetObserver;
@@ -12,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ExpandableListAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 public class AbstractExpandableListAdapter<A, B> implements ExpandableListAdapter {
@@ -149,6 +152,8 @@ public class AbstractExpandableListAdapter<A, B> implements ExpandableListAdapte
                 if(isGroup){
                     Entry entry = (Entry) data.get(position);
                     v.setText(entry.getKey().toString());
+                    ImageView iv = (ImageView) view.findViewById(R.id.albumlist_albumart_imageview);
+                    iv.setImageDrawable(((Album)entry.getKey()).mArt);
                 }
                 else{
                     v.setText(data.get(position).toString());
